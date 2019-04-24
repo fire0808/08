@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>出租车轨迹</title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.11/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.11/"></script>
+
+    <script>
+      require(["esri/Map", "esri/views/MapView","esri/widgets/Legend","esri/layers/CSVLayer"], function(Map, MapView,Legend,CSVLayer) {
+        var map = new Map({
+          basemap: "satellite"
+        });
+
+        var view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [114.3, 30.5],
+          zoom: 10
+        });
+        
+        const symbol = {
+          type: "simple-marker", // autocasts as new SimpleMarkerSymbol()
+          path: "M14.5,29 23.5,0 14.5,9 5.5,0z",
+          color: "#ffff00",
+          outline: {
+            color: [0, 0, 0, 0.7],
+            width: 0.5
+          },
+          angle: 180,
+          size: 15
+        };
+        
+        const rotationRenderer = {
+          type: "simple", // autocasts as new SimpleRenderer()
+          symbol: symbol,
+          visualVariables: [
+            {
+              type: "rotation",
+              field: "T_Heading",
+              rotationType: "geographic"
+            },
+            {
+              type: "size",
+              field: "T_SPEED",
+              minDataValue: 0,
+              maxDataValue: 60,
+              minSize: 8,
+              maxSize: 40
+            }
+          ]
+        };
+        
+        var url = "https://cxqttkl.github.io/web4gis15/wuhangps-tiny.csv";
+        var csvLayer = new CSVLayer({
+          url: url,
+          copyright: "WUHAN Taxi",
+          title: "WUHAN Taxi",
+          renderer: rotationRenderer
+        });
+        map.add(csvLayer); 
+        
+        view.ui.add(
+          new Legend({
+            view: view
+          }),
+          "bottom-left"
+        );
+        
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>
