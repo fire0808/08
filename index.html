@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>全国人口图</title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.11/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.11/"></script>
+
+    <script>
+      require(["esri/Map", "esri/views/MapView","esri/layers/GeoJSONLayer","esri/widgets/Legend"], function(Map, MapView,GeoJSONLayer,Legend) {
+        var map = new Map({
+          basemap: "osm"
+        });
+
+        var view = new MapView({
+          container: "viewDiv",
+          map: map,
+          center: [110, 30],
+          zoom: 4
+        });
+
+        const geoJSONLayer = new GeoJSONLayer({
+          url:  "https://raw.githubusercontent.com/fire0808/08/master/chinawgs84.json",
+          copyright: "CHINA pop",
+          title: "中国人口数量",         
+          objectIdField: "OBJECTID",
+            fields: [
+              {
+                name: "OBJECTID",
+                alias: "ObjectID",
+                type: "oid"
+              },
+              {
+                name: "ENGLISH",
+                alias: "cityname",
+                type: "string"
+              },
+              {
+                name: "pop2000",
+                alias: "2000年",
+                type: "double"
+              },
+              {
+                name: "pop2010",
+                alias: "2010年",
+                type: "double"
+              }
+            ],
+            popupTemplate: {
+              title: "{ENGLISH}",
+              content: "{expression/per-land-area}",
+              expressionInfos: [
+                {
+                  title: "per-land-area",
+                  name: "per-land-area",
+                  expression:
+                    "IIF(!IsEmpty($feature.pop2000), '2000年的人口数量为' + Round($feature.pop2000) +'人 ,' + '2010年的人口数量为' + Round($feature.pop2010) +'人', 'No data')"
+                }
+              ]
+            },
+            renderer: {
+              type: "class-breaks",
+              defaultLabel: "No data",
+              defaultSymbol: {
+                type: "simple-fill",
+                color: "#fcedcd",
+                outline: {
+                  color: [255, 255, 255, 0.1],
+                  width: 0.5
+                }
+              },
+              visualVariables: [
+                {
+                  type: "color",
+                  field: "pop2000",
+                  stops: [
+                    { value: 430000, color: "#D0D0CB" },
+                    { value: 92000000, color: "#4F6704" }
+                  ]
+                }
+              ]
+            }
+            
+        });
+        map.add(geoJSONLayer);
+        
+        view.ui.add(new Legend({ view: view }), "bottom-left");
+        
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>
