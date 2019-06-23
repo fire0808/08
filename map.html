@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <title>my map</title>   
+    <link rel="stylesheet" href="https://js.arcgis.com/4.11/esri/themes/light/main.css"/>
+    <script src="https://js.arcgis.com/4.11/"></script>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+      #pickmap {
+        top: 200px;
+        left: 20px;
+        position: absolute;
+        z-index: 99;
+        background-color: white;
+        border-radius: 8px;
+        padding: 10px;
+        opacity: 0.75;
+      }
+      #sPos {
+	      bottom: 30px;
+	      right: 20px;
+	      position: absolute;
+	      z-index: 99;
+	      background-color: white;
+	      border-radius: 8px;
+	      padding: 10px;
+	      opacity: 0.75;
+	    }
+	    
+	    #sSca {
+	      bottom: 80px;
+	      right: 20px;
+	      position: absolute;
+	      z-index: 99;
+	      background-color: white;
+	      border-radius: 8px;
+	      padding: 10px;
+	      opacity: 0.75;
+	    }
+	    #oLay {
+	      top: 50px;
+	      right: 20px;
+	      position: absolute;
+	      z-index: 99;
+	      background-color: white;
+	      border-radius: 8px;
+	      padding: 10px;
+	      opacity: 0.75;
+	    }
+	    
+	    #oStu {
+	      top: 80px;
+	      right: 20px;
+	      position: absolute;
+	      z-index: 99;
+	      background-color: white;
+	      border-radius: 8px;
+	      padding: 10px;
+	      opacity: 0.75;
+	    }
+	    .panel-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .panel-side {
+        padding: 2px;
+        box-sizing: border-box;
+        width: 300px;
+        height: 60%;
+        position: absolute;
+        top: 150px;
+        right: 0;
+        color: #fff;
+        background-color: rgba(0, 0, 0, 0.6);
+        overflow: auto;
+        z-index: 60;
+      }
+
+      .panel-side h3 {
+        padding: 0 20px;
+        margin: 20px 0;
+      }
+
+      .panel-side ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .panel-side li {
+        list-style: none;
+        padding: 10px 20px;
+      }
+
+      .panel-result {
+        cursor: pointer;
+        margin: 2px 0;
+        background-color: rgba(0, 0, 0, 0.3);
+      }
+
+      .panel-result:hover,
+      .panel-result:focus {
+        color: orange;
+        background-color: rgba(0, 0, 0, 0.75);
+      }
+
+    </style>
+  </head>
+  <body>
+  	<div class="panel-container">
+      <div class="panel-side">
+        <h3>安徽省地区生产总值</h3>
+        <ul id="nyc_graphics">
+          <li>Loading&hellip;</li>
+        </ul>
+      </div>
+      <div id="viewDiv"></div>
+    </div>
+    <span id="pickmap">
+	        切换底图
+	    <select id="selectmap">
+	       <option value ="osm">osm</option>
+	       <option value ="satellite">satellite</option>
+	       <option value="oceans">oceans</option>
+	       <option value="streets">streets</option>
+	    </select>
+    </span>
+    <span id="oLay">
+	    <input type="checkbox" id="ol"> 人口热力图
+	  </span>
+	  <span id="oStu">
+	    <input type="checkbox" id="os"> 受教育年限
+	  </span>
+    <span id="sPos">
+	  	当前鼠标位置<input type="text" id="sp"/>
+	  </span>
+	  <span id="sSca">
+	  	比例尺 <input type="text" id="ss"/>
+	  </span>
+    
+    <script>
+      require(["esri/Map", "esri/views/MapView","esri/layers/CSVLayer","esri/layers/GeoJSONLayer","esri/symbols/WebStyleSymbol","esri/widgets/Legend"], function(Map, MapView,CSVLayer,GeoJSONLayer,WebStyleSymbol,Legend) {
+        var map = new Map({
+          basemap: "osm"
+        });
+
+        var view = new MapView({
+          container: "viewDiv",
+          map: map,
+          zoom: 7,
+          center: [117.17,31.52]
+        });
+
+        var basemaps = [        
+         "osm",
+         "satellite",
+         "oceans",
+         "streets"
+        ];
+        
+        var maps = basemaps.map(function(basemapsss) {
+          return new Map({
+            basemap: basemapsss
+          });
+        });
+        const listNode = document.getElementById("nyc_graphics");
+        //经济图层
+        const geoJSONLayer = new GeoJSONLayer({
+          url:  "https://raw.githubusercontent.com/fire0808/08/master/安徽GDP.json",
+          //visible: false,
+          copyright: "CHINA pop",
+          title: "安徽省地区生产总值",         
+          objectIdField: "OBJECTID",
+	        fields: [            
+		          {
+		            name: "CityNameC",
+		            alias: "cityname",
+		            type: "string"
+		          },
+		          {
+		            name: "eco2013",
+		            alias: "2013年",
+		            type: "double"
+		          },
+		          {
+		            name: "eco2014",
+		            alias: "2014年",
+		            type: "double"
+		          },
+		          {
+		            name: "eco2015",
+		            alias: "2015年",
+		            type: "double"
+		          },
+		          {
+		            name: "eco2016",
+		            alias: "2016年",
+		            type: "double"
+		          },
+		          {
+		            name: "eco2017",
+		            alias: "2017年",
+		            type: "double"
+		          }
+	        ],
+          popupTemplate: {
+             title: "{CityNameC}",
+              content: [ 
+              {
+                type: "fields", 
+                fieldInfos: [
+                  {
+                    fieldName: "eco2013",
+                    visible: true,
+                    label: "2013年生产总值(亿元)",
+                    format: {
+                      places: 0,
+                      digitSeparator: false
+                    }
+                  },
+                  {
+                    fieldName: "eco2014",
+                    visible: true,
+                    label: "2014年生产总值(亿元)",
+                    format: {
+                      places: 0,
+                      digitSeparator: true
+                    }
+                  },
+                   {
+                    fieldName: "eco2015",
+                    visible: true,
+                    label: "2015年生产总值(亿元)",
+                    format: {
+                      places: 0,
+                      digitSeparator: true
+                    }
+                  },
+                   {
+                    fieldName: "eco2016",
+                    visible: true,
+                    label: "2016年生产总值(亿元)",
+                    format: {
+                      places: 0,
+                      digitSeparator: true
+                    }
+                  },
+                   {
+                    fieldName: "eco2017",
+                    visible: true,
+                    label: "2017年生产总值(亿元)",
+                    format: {
+                      places: 0,
+                      digitSeparator: true
+                    }
+                  }
+                ]
+              },
+//            {
+//              type: "media", // MediaContentElement
+//              mediaInfos: [
+//                {
+//                  title: "<b>{CityNameC}2014——2018年生产总值条形统计图</b>",
+//                  type: "column-chart",
+//                  caption: "",
+//                  value: {
+//                    fields: ["eco2013","eco2014","eco2015","eco2016","eco2017"],
+//                    normalizeField: null,
+//                    tooltipField: ""
+//                  }
+//                },
+//                {
+//                  title: "<b>{CityNameC}2014——2018年生产总值折线统计图</b>",
+//                  type: "line-chart",
+//                  caption: "",
+//                  value: {
+//                    fields: ["eco2013","eco2014","eco2015","eco2016","eco2017"],
+//                    normalizeField: null,
+//                    tooltipField: ""
+//                  }
+//                }                 
+//              ]
+//            },
+              
+              ]             
+           },                     
+            renderer: {
+              type: "class-breaks",
+              defaultLabel: "No data",
+              defaultSymbol: {
+                type: "simple-fill",
+                color: "#fcedcd",
+                outline: {
+                  color: [255, 255, 255, 0.1],
+                  width: 0.5
+                }
+              },
+              visualVariables: [
+                {
+                  type: "color",
+                  field: "eco2017",
+                  stops: [
+                    { value: 400, color: "#D0D0CB" },
+                    { value: 7100, color: "#4F6704" }
+                  ]
+                }
+              ]
+            }
+            
+        });
+        
+        //人口图层
+        var popheadsRenderer = {
+          type: "heatmap",
+          field: "pop2013",
+          colorStops: [
+				    { ratio: 0, color: "rgba(255, 255, 255, 0)" },
+				    { ratio: 0.2, color: "rgba(255, 255, 255, 1)" },
+				    { ratio: 0.5, color: "rgba(255, 140, 0, 1)" },
+				    { ratio: 0.8, color: "rgba(255, 140, 0, 1)" },
+				    { ratio: 1, color: "rgba(255, 0, 0, 1)" }
+				  ],
+				  minPixelIntensity: 0,
+				  maxPixelIntensity: 150
+				};
+        var url = "https://fire0808.github.io/08/安徽省人口.csv";
+        var csvLayer = new CSVLayer({
+          url: url,
+          copyright: "安徽省人口",
+          title: "安徽省常住人口",
+          visible: false,                
+        });
+        csvLayer.renderer=popheadsRenderer; 
+        
+        //受教育图层
+        var symbol = {
+				  type: "simple-marker",  // autocasts as new SimpleMarkerSymbol()
+				  style: "square",
+				  color: "blue",
+				  size: "8px",  // pixels
+				  outline: {  // autocasts as new SimpleLineSymbol()
+				    color: [ 255, 255, 0 ],
+				    width: 3  // points
+				  }
+				};
+       
+        var objectSymbolRenderer = {          
+        	type: "simple", // autocasts as new SimpleRenderer() 
+        	symbol: symbol        
+        };
+	    
+		    var url1 = "https://fire0808.github.io/08/安徽省受教育年限.csv";
+        var csvLayer1 = new CSVLayer({
+          url: url1,
+          copyright: "mSchool",
+          title: "安徽省受教育年限",
+          visible: false,
+          renderer: objectSymbolRenderer,
+          fields: [            
+		          {
+		            name: "stu2013",
+		            alias: "2013年",
+		            type: "double"
+		          },
+		          {
+		            name: "stu2014",
+		            alias: "2014年",
+		            type: "double"
+		          },
+		          {
+		            name: "stu2015",
+		            alias: "2015年",
+		            type: "double"
+		          },
+		          {
+		            name: "stu2016",
+		            alias: "2016年",
+		            type: "double"
+		          },
+		          {
+		            name: "stu2017",
+		            alias: "2017年",
+		            type: "double"
+		          }
+	        ],
+          popupTemplate: {
+              content: [ 
+              {
+                type: "media", // MediaContentElement
+                mediaInfos: [
+                  {
+                    type: "column-chart",
+                    caption: "",
+                    value: {
+                      fields: ["stu2013","stu2014","stu2015","stu2016","stu2017"],
+                      normalizeField: null,
+                      tooltipField: ""
+                    }
+                  },
+                  {
+                    type: "line-chart",
+                    caption: "",
+                    value: {
+                      fields: ["stu2013","stu2014","stu2015","stu2016","stu2017"],
+                      normalizeField: null,
+                      tooltipField: ""
+                    }
+                  }                 
+                ]
+              },
+              
+              ]             
+           },                   
+        });
+        
+        function addmap()
+        {        
+	        view.map.add(geoJSONLayer);
+	        view.map.add(csvLayer);
+	        view.map.add(csvLayer1);
+        }        
+        addmap();
+        
+        //切换底图
+        var selectmap = document.getElementById("selectmap");
+        selectmap.addEventListener("change", function () {
+          if(selectmap.value == "osm"){
+          	view.map = maps[0];
+          	addmap();
+          	}
+          if(selectmap.value == "satellite"){
+          	view.map = maps[1];
+          	addmap();
+          	}
+          if(selectmap.value == "oceans"){
+          	view.map = maps[2];
+          	addmap();
+          	}
+          if(selectmap.value == "streets"){
+          	view.map = maps[3];
+          	addmap();
+            }      
+        });
+        //实时显示坐标和比例尺
+        var inp = document.getElementById("sp");
+        var scl = document.getElementById("ss");
+        view.on("pointer-move" , function(evt){
+           var point = view.toMap({x: evt.x, y: evt.y});
+           var info = " x: "+point.longitude.toFixed(3)+ " , y: "+ point.latitude.toFixed(3);
+           inp.value = info;
+           scl.value = "  1: " +view.scale.toFixed(3); 
+        });
+        
+        var oLay1 = document.getElementById("ol");
+        oLay1.addEventListener("change", function () {
+        	if(oLay1.checked == true){
+        		csvLayer.visible = true;
+        	}
+        	else{
+        		csvLayer.visible = false;
+        	}          
+        });
+        
+        var oStu1 = document.getElementById("os");
+        oStu1.addEventListener("change", function () {
+        	if(oStu1.checked == true){
+        		csvLayer1.visible = true;
+        	}
+        	else{
+        		csvLayer1.visible = false;
+        	}          
+        });
+        
+        let graphics;
+
+        view.whenLayerView(geoJSONLayer).then(function(layerView) {
+          layerView.watch("updating", function(value) {
+            if (!value) {
+
+              layerView
+                .queryFeatures({
+                  geometry: view.extent,
+                  returnGeometry: true
+                })
+                .then(function(results) {
+                  graphics = results.features;
+
+                  const fragment = document.createDocumentFragment();
+
+                  graphics.forEach(function(result, index) {
+                    const attributes = result.attributes;
+                    const name = attributes.CityNameC;
+
+                    const li = document.createElement("li");
+                    li.classList.add("panel-result");
+                    li.tabIndex = 0;
+                    li.setAttribute("data-result-id", index);
+                    li.textContent = name;
+
+                    fragment.appendChild(li);
+                  });
+                  // Empty the current list
+                  listNode.innerHTML = "";
+                  listNode.appendChild(fragment);
+                })
+                .catch(function(error) {
+                  console.error("query failed: ", error);
+                });
+            }
+          });
+        });
+
+        listNode.addEventListener("click", onListClickHandler);
+
+        function onListClickHandler(event) {
+          const target = event.target;
+          const resultId = target.getAttribute("data-result-id");
+
+          const result =
+            resultId && graphics && graphics[parseInt(resultId, 10)];
+
+          if (result) {
+
+            view.goTo(result.geometry.extent.expand(2)).then(function() {
+              view.popup.open({
+                features: [result],
+                location: result.geometry.centroid
+              });
+            });
+          }
+        }
+        
+        view.ui.add(new Legend({ view: view }), "bottom-left");
+        
+      });
+    </script>
+  </body>
+</html>
